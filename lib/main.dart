@@ -1,6 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:movies_list/post.dart';
 void main() {
   runApp(MyApp());
 }
@@ -66,25 +69,66 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: FutureBuilder<dynamic>(
-        future: fetchPost(),
+        future: fetchPosts(),
         builder: (context,snapshot){
           if (snapshot.hasData){
-            return Padding (
-              padding: const EdgeInsets.all(24),
-              child:Card(
-                child:Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize:MainAxisSize.min ,
-                    children: [Text(
-                      'hello'
-                    )],
+            final posts = snapshot.data;
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (ctx,index){
+                final post = posts[index];
+                return Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child:Row(
+                      children:[
+                        SizedBox(
+                          height: 100,
+                          child:Image.network(post.image)
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.only(left:2),
+
+                        ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+
+                          Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Center(child: Text(post.title, textAlign: TextAlign.center,style: TextStyle(fontWeight: FontWeight.bold),)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Center(child: Text('Release on: ${post.releaseYear}', textAlign: TextAlign.center,style: TextStyle(color: CupertinoColors.inactiveGray),)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Center(child: Text('Rating: ${post.rating}', textAlign: TextAlign.center,style: TextStyle(color: CupertinoColors.inactiveGray),)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Text(post.genre.toString(), textAlign: TextAlign.start,),
+                          ),
+                        ],
+                      )],
+                    )
                   ),
-                )
-              )
+                );
+              },
             );
-          } else{
+
+          } else if (snapshot.hasError){
+            return Center(
+              child:Text(snapshot.error.toString())
+            );
+          }else
+
+          {
             return Center(
               child: CircularProgressIndicator(),
             );
@@ -95,14 +139,13 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-Future<dynamic> fetchPost()async{
+Future<List<Post>> fetchPosts() async{
   final response = await http.get('https://api.androidhive.info/json/movies.json');
-  if (response.statusCode==200){
-    var mappedResponse = json.decode(response.body) as List;
-   List<Post> posts= mappedResponse.map((postResponse)=> Post.fromJson(postResponse)).toList();
-   return posts;
+  if(response.statusCode == 200){
+    print(response.body);
+    return postFromJson(response.body);
   }else{
-    throw Exception("Failed to load the movies");
+    throw Exception('FAILED TO LOAD POST');
   }
 
 }
